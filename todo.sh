@@ -6,25 +6,56 @@
 
 # REQUIREMENTS
 # DONE: must have functioning menu mode
-# must have functioning command line mode
+# DONE: must have functioning command line mode
 # DONE: must allow for spaces
 # DONE: sorted list display
 # DONE: all files only readable and writable to owner
 # DONE: if in menu mode, wrong input displays error and menu again
-# if in command line mode, wrong input displays help menu
+# DONE: if in command line mode, wrong input displays help menu
 # DONE: program structured into functions
 # DONE: must use a public git repository
 
+# colors for print formatting
+YELLOW="\033[1;33m"
+LCYAN="\033[1;36m"
+NC="\033[0m"
+
+# argument variables
+a_num=$#
+a1=$1
+a2=$2
+a3=$3
+a4=$4
+args=$@
+
 # functions
+# ------------
 # initilization function
 # checks for arguments and determines mode accordingly
 # also counts items in completed list
 init () {
 	check_directories "todo" "todo_completed"
+	check_stdin
+	count_incomplete
 	count_completed
-	
-	echo "$?" "arguments"
-	display_menu
+
+	if [ $a_num -ne 0  ]; then
+		menu_mode=0
+		use_args
+	else
+		menu_mode=1
+		display_menu
+	fi
+}
+
+# checks is the user pipes information into the script (for add_item description)
+check_stdin () {
+	# if stdin has information
+	if [ -p /dev/stdin ]; then
+		PIPED_INPUT=$( cat )
+	else
+		PIPED_INPUT=""
+	fi
 }
 
 # checks if directories exist and makes them if not
@@ -36,6 +67,19 @@ check_directories () {
 
 	if [ ! -d "$2" ]; then
 		mkdir "$2"
+	fi
+}
+
+# counts all items in todo list
+count_incomplete () {
+	# using ls -A [dir] allows us to check if the directory is empty
+	# -A means display all hidden files (starting with .) other than '.' and '..' which are present in every folder
+	if [ "$(ls -A todo)" ]; then
+		COUNT=0
+		for t in todo/*.txt
+		do
+			COUNT=$((COUNT+1))
+		done
 	fi
 }
 
@@ -52,10 +96,43 @@ count_completed () {
 	fi
 }
 
+# uses arguments for command line mode
+use_args () {
+	if [[ "$a1" == "list" ]]; then
+		if [[ "$a2" == "completed" ]]; then
+			list_items "todo_completed"
+		else
+			list_items "todo"
+		fi
+	elif [[ "$a1" == "complete" ]]; then
+		complete_item $((a2))
+	elif [[ "$a1" == "add" ]]; then
+		add_item "$a2" "$PIPED_INPUT"
+	elif [[ "$a1" == "info" ]]; then
+		more_info "$a2"
+	else
+		display_help
+	fi
+}
+
+# displays help message
+# COMMAND LINE ONLY
+display_help () {
+	echo -e "\n${LCYAN}-----------------------${NC}\n"
+	echo -e "possible commands:\n"
+	echo -e "${LCYAN}help${NC}: displays help message (this)"
+	echo -e "${LCYAN}list${NC}: lists all items in the uncompleted todo list"
+	echo -e "${LCYAN}complete ${YELLOW}[number]${NC}: completes the item of the chosen number"
+	echo -e "${LCYAN}list completed${NC}: lists all items in the completed todo list"
+	echo -e "${LCYAN}add ${YELLOW}[title]${NC}: adds an item with the given title to the todo list"
+	echo -e "${LCYAN}add ${YELLOW}[title]${NC} cont.: information piped in is the description"
+	echo -e "\n${LCYAN}-----------------------${NC}\n"
+}
+
 # list all items in the supplied directory
 # takes $1 as directory to list items from
 list_items () {
-	echo "----------------------"	
+	echo -e "${LCYAN}----------------------${NC}"	
 	echo "Current items in list:"
 	if [ "$(ls -A $1)" ]; then
 	COUNT=0
@@ -63,7 +140,7 @@ list_items () {
 		do
 			COUNT=$((COUNT+1))
 			# head -n 1 $t means the first line in the current file (title)
-			echo "$COUNT. $(head -n 1 $t)"	
+			echo -e "${YELLOW}$COUNT.${NC} $(head -n 1 $t)"	
 		done
 	else
 		COUNT=0
@@ -92,7 +169,7 @@ read_input () {
 # prompt the user if they'd like to continue
 # MENU MODE ONLY
 cont () {
-	read -p "Continue? (Y/N) " C
+	read -p "Continue? (Y/N) " C 
 	if [ $C == 'Y' ]; then
 		display_menu
 	else
@@ -105,7 +182,7 @@ complete_item () {
 	# COMPLETE AN ITEM
 	C=$1
 	# If argument, C, is a number, less than or equal to the amount of items in list, and greater than 0
-	if [ $((C)) == $C ] && [ $C -le $COUNT ] && [ $C -gt 0 ]; then
+	if [[ $((C)) == $C ]] && [[ $C -le $COUNT ]] && [[ $C -gt 0 ]]; then
 		C_ITEM_COUNT=$((C_ITEM_COUNT+1))
 		COUNT=$((COUNT-1))
 		cd todo
@@ -113,10 +190,10 @@ complete_item () {
 		for f in *.txt; do
 			i=$((i+1))
 			# If current file number is the choice, move it
-			if [ $((i)) == $((C)) ]; then
+			if [[ $((i)) == $((C)) ]]; then
 				mv "$C.txt" "../todo_completed/$C_ITEM_COUNT.txt"
 			# If the current file number is greater than the choice, move it forward by 1
-			elif [ $i -gt $C ]; then
+			elif [[ $i -gt $C ]]; then
 				if [ $((i)) == 1 ]; then
 					# j is the new filename value
 					j=$((i))
@@ -128,7 +205,9 @@ complete_item () {
 			fi	
 		done
 		cd ../
-		display_menu	
+		if [[ $menu_mode == 1 ]]; then
+			display_menu	
+		fi
 	else
 		no_option_error
 	fi
@@ -145,24 +224,29 @@ add_item () {
 	echo "------" >> "$COUNT.txt"
 	echo "$2" >> "$COUNT.txt"	
 	cd ../
-	display_menu
+	if [[ $menu_mode == 1 ]]; then
+		display_menu
+	fi
 }
 
 # outputs all file contents
 # takes $1 as file to read
 more_info () {
-	if [ $((CHOICE)) -gt 0 ]; then		
+	if [[ $1 -gt 0 ]] && [[ $1 -le $COUNT ]]; then
 		while IFS= read -r line
 		do
 			echo "$line"
-		done < "todo/$1"
-		cont
+		done < "todo/$1.txt"
+		if [[ $menu_mode == 1 ]]; then
+			cont
+		fi
 	elif [ $((COUNT)) == 0 ]; then
 		list_empty_error
+	else
+		no_option_error
 	fi
 }
 
-# TODO: FUNCTIONALIZE THESE TO TAKE ARGUMENTS FOR COMMAND LINE INTERFACE RATHER THAN JUST MENU
 # Uses user input as $CHOICE and processes it accordingly
 # MENU MODE ONLY
 use_input () {
@@ -193,7 +277,7 @@ use_input () {
 		# then it is a number value
 		# if choice number is within range from count
 		if [ $((CHOICE)) -le $COUNT ]; then
-			more_info "$CHOICE.txt"
+			more_info "$CHOICE"
 		else
 			no_option_error
 		fi
@@ -217,12 +301,15 @@ no_option_error () {
 # Takes $1 as error message
 generic_error () {
 	echo "----------------"		
-	echo -e "\nERROR: $1\n"
+	echo -e "\n${LCYAN}ERROR:${NC} $1\n"
 	echo "----------------"
-	display_menu
+	if [[ $menu_mode == 1 ]]; then
+		display_menu
+	else
+		display_help
+	fi
 }
 
-# Exit the program
 quit () {
 	exit 1
 }
