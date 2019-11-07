@@ -20,10 +20,23 @@
 # checks for arguments and determines mode accordingly
 # also counts items in completed list
 init () {
+	check_directories "todo" "todo_completed"
 	count_completed
-
+	
 	echo "$?" "arguments"
 	display_menu
+}
+
+# checks if directories exist and makes them if not
+# takes $1 as directory 1 and $2 as directory 2
+check_directories () {
+	if [ ! -d "$1" ]; then
+		mkdir "$1"
+	fi
+
+	if [ ! -d "$2" ]; then
+		mkdir "$2"
+	fi
 }
 
 # counts items in the completed list
