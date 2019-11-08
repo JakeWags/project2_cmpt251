@@ -187,7 +187,8 @@ complete_item () {
 		COUNT=$((COUNT-1))
 		cd todo
 		i=0
-		for f in *.txt; do
+		for f in *.txt; 
+		do
 			i=$((i+1))
 			# If current file number is the choice, move it
 			if [[ $((i)) == $((C)) ]]; then
