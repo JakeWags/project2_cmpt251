@@ -118,7 +118,7 @@ use_args () {
 # displays help message
 # COMMAND LINE ONLY
 display_help () {
-	echo -e "\n${LCYAN}-----------------------${NC}\n"
+	echo -e "${LCYAN}-----------------------${NC}\n"
 	echo -e "possible commands:\n"
 	echo -e "${LCYAN}help${NC}: displays help message (this)"
 	echo -e "${LCYAN}list${NC}: lists all items in the uncompleted todo list"
@@ -126,6 +126,7 @@ display_help () {
 	echo -e "${LCYAN}list completed${NC}: lists all items in the completed todo list"
 	echo -e "${LCYAN}add ${YELLOW}[title]${NC}: adds an item with the given title to the todo list"
 	echo -e "${LCYAN}add ${YELLOW}[title]${NC} cont.: information piped in is the description"
+	echo -e  "${LCYAN}info ${YELLOW}[number]${NC}: displays the title and description of the selected item"
 	echo -e "\n${LCYAN}-----------------------${NC}\n"
 }
 
@@ -255,7 +256,7 @@ use_input () {
 	if [ $CHOICE == 'A' ]; then
 		# COMPLETE AN ITEM
 		if [ $((COUNT)) -gt 0 ]; then
-			list_items todo
+			list_items "todo"
 			read -p "Which number? (1-$COUNT) " C
 			complete_item $C
 		else
@@ -268,7 +269,7 @@ use_input () {
 		add_item "$TITLE" "$DESC"
 	elif [ $CHOICE == 'C' ]; then
 		# SHOW COMPLETED ITEMS
-		list_items todo_completed
+		list_items "todo_completed"
 		cont
 	elif [ $CHOICE == 'Q' ]; then
 		# QUIT
@@ -319,7 +320,7 @@ quit () {
 # Calls all functions to display the menu and process it
 # MENU MODE ONLY
 display_menu () {
-	list_items todo 
+	list_items "todo" 
 	list_options
 	read_input
 	use_input
