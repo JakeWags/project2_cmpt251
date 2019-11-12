@@ -168,9 +168,10 @@ read_input () {
 
 # prompt the user if they'd like to continue
 # MENU MODE ONLY
-cont () {
-	read -p "Continue? (Y/N) " C 
-	if [ $C == 'Y' ]; then
+cont () {	
+	echo -e "${LCYAN}----------------------${NC}"		
+	read -p "Continue? (Y/N) " CONT 
+	if [ $CONT == 'Y' ]; then
 		display_menu
 	else
 		quit
@@ -301,9 +302,8 @@ no_option_error () {
 # Formatting for error message and menu display
 # Takes $1 as error message
 generic_error () {
-	echo "----------------"		
-	echo -e "\n${LCYAN}ERROR:${NC} $1\n"
-	echo "----------------"
+	echo -e "${LCYAN}----------------------${NC}"		
+	echo -e "\n${YELLOW}ERROR:${NC} $1\n"
 	if [[ $menu_mode == 1 ]]; then
 		display_menu
 	else
@@ -311,6 +311,7 @@ generic_error () {
 	fi
 }
 
+# exits the script
 quit () {
 	exit 1
 }
